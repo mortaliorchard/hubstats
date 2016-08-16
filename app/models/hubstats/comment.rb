@@ -29,23 +29,27 @@ module Hubstats
     #
     # github_comment - the information from Github about the comment
     def self.create_or_update(github_comment)
-      github_comment = github_comment.to_h.with_indifferent_access if github_comment.respond_to? :to_h
-
-      user = Hubstats::User.create_or_update(github_comment[:user])
-      github_comment[:user_id] = user.id
-      
-      if github_comment[:pull_number]
-        pull_request = Hubstats::PullRequest.belonging_to_repo(github_comment[:repo_id]).where(number: github_comment[:pull_number]).first
-        if pull_request
-          github_comment[:pull_request_id] = pull_request.id
+      begin
+        github_comment = github_comment.to_h.with_indifferent_access if github_comment.respond_to? :to_h
+  
+        user = Hubstats::User.create_or_update(github_comment[:user])
+        github_comment[:user_id] = user.id
+        
+        if github_comment[:pull_number]
+          pull_request = Hubstats::PullRequest.belonging_to_repo(github_comment[:repo_id]).where(number: github_comment[:pull_number]).first
+          if pull_request
+            github_comment[:pull_request_id] = pull_request.id
+          end
         end
+  
+        comment_data = github_comment.slice(*Hubstats::Comment.column_names.map(&:to_sym))
+  
+        comment = where(:id => comment_data[:id]).first_or_create(comment_data)
+        return comment if comment.update_attributes(comment_data)
+        Rails.logger.warn comment.errors.inspect
+      rescue => e
+        Rails.logger.warn "Another comment that contained illegal utf8 characters"
       end
-
-      comment_data = github_comment.slice(*Hubstats::Comment.column_names.map(&:to_sym))
-
-      comment = where(:id => comment_data[:id]).first_or_create(comment_data)
-      return comment if comment.update_attributes(comment_data)
-      Rails.logger.warn comment.errors.inspect
     end
 
   end
