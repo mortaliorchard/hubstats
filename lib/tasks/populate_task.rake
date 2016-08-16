@@ -5,35 +5,35 @@ namespace :hubstats do
     desc "Pull repos from Github saves in database"
     task :setup_repos => :environment do
       Hubstats::GithubAPI.get_repos.each do |repo|
-        Rake::Task["hubstats:populate:setup_repo"].execute({repo: repo})
+        Rake::Task["app:hubstats:populate:setup_repo"].execute({repo: repo})
       end
       puts "Finished with initial population, grabbing extra info about pull requests"
-      Rake::Task["hubstats:populate:update_pulls"].execute
+      Rake::Task["app:hubstats:populate:update_pulls"].execute
       puts "Finished grabbing info about pull requests, populating teams"
-      Rake::Task["hubstats:populate:teams"].execute
+      Rake::Task["app:hubstats:populate:teams"].execute
     end
 
     desc "Updates which repos hubstats tracks" 
     task :update_repos => :environment do
       Hubstats::GithubAPI.get_repos.each do |repo|
         unless Hubstats::Repo.where(full_name: repo.full_name).first
-          Rake::Task["hubstats:populate:setup_repo"].execute({repo: repo})
+          Rake::Task["app:hubstats:populate:setup_repo"].execute({repo: repo})
         end
       end
       puts "Finished with initial updating, grabbing extra info about pull requests"
-      Rake::Task["hubstats:populate:update_pulls"].execute
+      Rake::Task["app:hubstats:populate:update_pulls"].execute
       puts "Finished grabbing info about pull requests, populating teams"
-      Rake::Task["hubstats:populate:teams"].execute
+      Rake::Task["app:hubstats:populate:teams"].execute
     end
 
     desc "Updates teams for past pull requests"
     task :update_teams_in_pulls => :environment do
-      Rake::Task["hubstats:populate:update_teams_in_prs"].execute
+      Rake::Task["app:hubstats:populate:update_teams_in_prs"].execute
     end
 
     desc "Updates the teams"
     task :update_teams => :environment do
-      Rake::Task['hubstats:populate:teams'].execute
+      Rake::Task['app:hubstats:populate:teams'].execute
     end
 
     desc "Deprecates teams based on the octokit.yml file"
@@ -43,7 +43,7 @@ namespace :hubstats do
 
     desc "Creates the webhook for the current org"
     task :setup_teams => :environment do
-      Rake::Task['hubstats:populate:create_org_hook'].execute
+      Rake::Task['app:hubstats:populate:create_org_hook'].execute
     end
 
     task :create_org_hook => :environment do
@@ -55,10 +55,10 @@ namespace :hubstats do
       repo = args[:repo]
       Hubstats::Repo.create_or_update(repo)
       Hubstats::GithubAPI.create_hook(repo)
-      Rake::Task["hubstats:populate:users"].execute({repo: repo})
-      Rake::Task["hubstats:populate:pulls"].execute({repo: repo})
-      Rake::Task["hubstats:populate:comments"].execute({repo: repo})
-      Rake::Task["hubstats:populate:labels"].execute({repo: repo})
+      Rake::Task["app:hubstats:populate:users"].execute({repo: repo})
+      Rake::Task["app:hubstats:populate:pulls"].execute({repo: repo})
+      Rake::Task["app:hubstats:populate:comments"].execute({repo: repo})
+      Rake::Task["app:hubstats:populate:labels"].execute({repo: repo})
     end
 
     desc "Pull members from Github saves in database"
